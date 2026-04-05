@@ -1,7 +1,8 @@
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.ZHIPU_API_KEY || process.env.OPENAI_API_KEY,
+  baseURL: 'https://open.bigmodel.cn/api/paas/v4',
 });
 
 export interface AIResponse {
@@ -13,7 +14,7 @@ export interface AIResponse {
 
 export async function generateContent(prompt: string): Promise<AIResponse> {
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'glm-4',
     messages: [
       { role: 'system', content: '你是一个专业的内容创作助手，只输出 JSON，不要有其他文字。' },
       { role: 'user', content: prompt },

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import cors from 'koa-cors';
@@ -16,16 +17,18 @@ app.use(async (ctx, next) => {
     await next();
   } catch (err: any) {
     ctx.status = err.status || 500;
+    const isDev = process.env.NODE_ENV === 'development';
     ctx.body = {
       code: ctx.status,
-      message: err.message || 'Internal server error',
+      message: isDev ? err.message : 'Internal server error',
     };
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
+  console.log(`API Base URL: http://172.17.104.76:${PORT}/api`);
 });
 
 export default app;

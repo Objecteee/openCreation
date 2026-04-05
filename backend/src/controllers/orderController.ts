@@ -15,7 +15,7 @@ export class OrderController {
 
   async recharge(ctx: Context) {
     const userId = ctx.state.user.userId;
-    const { packageId } = ctx.request.body as any;
+    const { packageId } = ctx.request.body as { packageId?: string };
 
     const packages: Record<string, { points: number; price: number }> = {
       package_60: { points: 60, price: 6 },
@@ -24,25 +24,31 @@ export class OrderController {
       package_1200: { points: 1200, price: 90 },
     };
 
-    const pkg = packages[packageId];
+    const pkg = packages[packageId || ''];
     if (!pkg) {
       ctx.status = 400;
       ctx.body = { code: 400, message: '无效的套餐' };
       return;
     }
 
-    await query(
-      'UPDATE users SET points = points + $1 WHERE id = $2',
+    query(
+      'UPDATE users SET points = points + ? WHERE id = ?',
       [pkg.points, userId]
     );
 
-    await query(
+    query(
       `INSERT INTO point_transactions (user_id, amount, type, description)
-       VALUES ($1, $2, 'recharge', $3)`,
+       VALUES (?, ?, 'recharge', ?)`,
       [userId, pkg.points, `充值${pkg.points}积分`]
     );
 
-    const users = await query('SELECT points FROM users WHERE id = $1', [userId]);
+    const users = query('SELECT points FROM users WHERE id = ?', [userId]);
+
+    if (users.length === 0) {
+      ctx.status = 404;
+      ctx.body = { code: 404, message: '用户不存在' };
+      return;
+    }
 
     ctx.body = {
       code: 0,
@@ -53,16 +59,17 @@ export class OrderController {
 
   async getTransactions(ctx: Context) {
     const userId = ctx.state.user.userId;
-    const { page = 1, pageSize = 20 } = ctx.query;
-    const offset = (Number(page) - 1) * Number(pageSize);
+    const page = parseInt(ctx.query.page as string) || 1;
+    const pageSize = parseInt(ctx.query.pageSize as string) || 20;
+    const offset = (page - 1) * pageSize;
 
-    const records = await query(
+    const records = query(
       `SELECT id, amount, type, description, created_at
        FROM point_transactions
-       WHERE user_id = $1
+       WHERE user_id = ?
        ORDER BY created_at DESC
-       LIMIT $2 OFFSET $3`,
-      [userId, Number(pageSize), offset]
+       LIMIT ? OFFSET ?`,
+      [userId, pageSize, offset]
     );
 
     ctx.body = { code: 0, message: 'success', data: records };

@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import { useAppStore } from '../store/useAppStore';
 import { ApiResponse, User, GeneratedContent, Package } from '../types';
 
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://172.17.104.76:3000/api';
 
 class ApiService {
   private client: AxiosInstance;
